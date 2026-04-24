@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: llm-bias-studio
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 8 --timeout 300 api:app
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false          # Set this manually in the Render dashboard
+      - key: PYTHON_VERSION
+        value: 3.10.14
+    plan: standard           # standard = 2 GB RAM (needed for ML models)
+    autoDeploy: true

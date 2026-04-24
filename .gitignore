@@ -1,3 +1,62 @@
-.venv
+# ── Environment & Secrets ───────────────────────────────────────────────────
 .env
-*.pyc
+.env.*
+!.env.example
+
+# ── Python ──────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual Environments ─────────────────────────────────────────────────────
+.venv/
+venv/
+env/
+ENV/
+
+# ── Jupyter Notebooks ────────────────────────────────────────────────────────
+.ipynb_checkpoints/
+*.ipynb
+
+# ── ML / HuggingFace Model Cache ─────────────────────────────────────────────
+# Cached model weights downloaded at runtime (large files)
+*.bin
+*.safetensors
+*.pt
+*.pth
+huggingface_cache/
+.cache/
+
+# ── Logs & Temp ──────────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.swp
+*.bak
+
+# ── OS ───────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / Editor ─────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.code-workspace
+
+# ── Docker ───────────────────────────────────────────────────────────────────
+# Keep Dockerfile and .dockerignore tracked
+# Ignore any local override files
+docker-compose.override.yml
+
+# ── Test & Coverage ───────────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/
