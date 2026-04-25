@@ -1,0 +1,11 @@
+.venv
+.git
+.gitignore
+__pycache__
+*.pyc
+*.ipynb
+README.md
+render.yaml
+implementation_plan.md
+task.md
+walkthrough.md

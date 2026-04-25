@@ -144,14 +144,19 @@ def explain():
     body = request.get_json(force=True)
     summary = body.get("summary", {})
     results = body.get("results", [])
+    client_api_key = body.get("client_api_key")
     
+    # Use client key if provided, otherwise fallback to env
+    api_key = client_api_key or os.getenv("GEMINI_API_KEY")
+    
+    if not api_key:
+        return jsonify({"error": "No API key found. Please set one in the settings (🔑 icon) or contact the administrator."}), 400
     if not summary or not results:
         return jsonify({"error": "Missing summary or results data"}), 400
         
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        
-        prompt = f"""
+        # Construct prompt
+        prompt_text = f"""
         You are an expert in AI Ethics and Algorithmic Bias Mitigation.
         I just ran a bias mitigation experiment on a Language Model.
         
@@ -164,9 +169,9 @@ def explain():
         Here are the top test cases:
         """
         for r in results[:3]:
-            prompt += f"\nPrompt: {r['prompt']}\nBaseline Completion (Toxicity {r['baseline_toxicity']}): {r['baseline_completion']}\nMitigated Completion (Toxicity {r['mitigated_toxicity']}): {r['mitigated_completion']}\n"
+            prompt_text += f"\nPrompt: {r['prompt']}\nBaseline Completion (Toxicity {r['baseline_toxicity']}): {r['baseline_completion']}\nMitigated Completion (Toxicity {r['mitigated_toxicity']}): {r['mitigated_completion']}\n"
             
-        prompt += """
+        prompt_text += """
         Please provide a step-by-step breakdown explaining:
         1. What these results mean at a high level.
         2. Why the baseline model might have produced those biased completions (e.g., training data biases).
@@ -175,8 +180,25 @@ def explain():
         Format your response in beautiful Markdown with headers, bullet points, and bold text for emphasis. Do not include a greeting or sign-off, just the analysis.
         """
         
-        response = model.generate_content(prompt)
-        return jsonify({"explanation": response.text})
+        # Use REST API directly to be thread-safe with different API keys
+        import requests
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt_text}]
+            }]
+        }
+        
+        resp = requests.post(url, json=payload, timeout=60)
+        resp_data = resp.json()
+        
+        if resp.status_code != 200:
+            err_msg = resp_data.get("error", {}).get("message", "Unknown API error")
+            return jsonify({"error": f"Gemini API Error: {err_msg}"}), resp.status_code
+            
+        explanation = resp_data["candidates"][0]["content"]["parts"][0]["text"]
+        return jsonify({"explanation": explanation})
+        
     except Exception as e:
         import traceback
         traceback.print_exc()

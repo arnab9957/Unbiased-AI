@@ -152,7 +152,7 @@ tr:hover td{background:rgba(255,255,255,.02);}
 <main>
   <!-- API notice -->
   <div class="api-note">
-    🔌 Calls <span>http://localhost:5050/api/analyze</span> — run <code>python api.py</code> first. Demo mode uses simulated data if the API is offline.
+    🔌 Calls <span>/api/analyze</span> — run <code>python api.py</code> first. Demo mode uses simulated data if the API is offline.
   </div>
 
   <!-- CONFIG CARD -->
@@ -240,13 +240,16 @@ A person with a disability leading a startup is generally described as</textarea
 
     <!-- AI EXPLANATION -->
     <div class="card" style="margin-bottom:1.5rem; border:1px solid rgba(99,102,241,0.3); background:linear-gradient(145deg, var(--surface2), var(--card));">
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-        <div class="chart-title" style="margin:0; color:var(--text); display:flex; align-items:center; gap:.5rem; font-size:.9rem;">
-          ✨ Gemini AI Analysis
+        <div style="display:flex; align-items:center; gap:.75rem;">
+          <div id="api-key-wrapper" style="display:none; align-items:center; gap:.4rem; background:rgba(255,255,255,0.05); padding:.2rem .5rem; border-radius:8px; border:1px solid var(--border);">
+            <input type="password" id="client-api-key" placeholder="Gemini API Key" style="width:140px; padding:.3rem .5rem; font-size:.75rem; background:transparent; border:none; color:var(--text); outline:none;"/>
+            <button class="btn-cat" onclick="saveApiKey()" style="padding:.2rem .4rem; border:none; background:var(--accent); color:#fff;">Save</button>
+          </div>
+          <button class="btn-cat" id="btn-toggle-key" onclick="toggleKeyInput()" title="Set Custom API Key">🔑</button>
+          <button class="btn-run" id="btn-explain" style="padding:0.4rem 1rem; font-size:0.85rem; width:auto; border-radius:8px;" onclick="explainResults()">
+            Generate Explanation
+          </button>
         </div>
-        <button class="btn-run" id="btn-explain" style="padding:0.4rem 1rem; font-size:0.85rem; width:auto; border-radius:8px;" onclick="explainResults()">
-          Generate Explanation
-        </button>
       </div>
       <div id="ai-explanation" style="display:none; font-size:0.95rem; line-height:1.6; border-top:1px dashed var(--border); padding-top:1rem;"></div>
     </div>
@@ -308,7 +311,7 @@ async function runAnalysis(){
 
   let data;
   try {
-    const res = await fetch('http://localhost:5050/api/analyze', {
+    const res = await fetch('/api/analyze', {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({prompts, strategy, max_new_tokens})
     });
@@ -492,10 +495,11 @@ async function explainResults() {
   div.innerHTML = '<p style="color:var(--muted)">Connecting to Gemini API...</p>';
 
   try {
-    const res = await fetch('http://localhost:5050/api/explain', {
+    const clientKey = localStorage.getItem('gemini_api_key');
+    const res = await fetch('/api/explain', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify(lastResults)
+      body: JSON.stringify({...lastResults, client_api_key: clientKey})
     });
     
     const data = await res.json();
@@ -503,11 +507,14 @@ async function explainResults() {
       if(window.marked) {
         div.innerHTML = marked.parse(data.explanation);
       } else {
-        div.innerText = data.explanation; // fallback
+        div.innerHTML = `<pre style="white-space:pre-wrap; font-family:inherit;">${data.explanation}</pre>`;
       }
       btn.innerHTML = 'Explanation Generated';
     } else {
-      div.innerHTML = `<span style="color:#fca5a5;">Failed: ${data.error}</span>`;
+      div.innerHTML = `<div style="padding:1rem; border-radius:8px; background:rgba(239,68,68,0.1); border:1px solid var(--red); color:#fca5a5;">
+        <strong>Error:</strong> ${data.error}<br/>
+        <small style="opacity:0.8; display:block; margin-top:0.4rem;">${data.error.includes('key') ? 'Check your API key in the settings above.' : 'Try again in a moment.'}</small>
+      </div>`;
       btn.innerHTML = 'Try Again';
       btn.disabled = false;
     }
@@ -517,6 +524,36 @@ async function explainResults() {
     btn.disabled = false;
   }
 }
+
+// --- API Key Management ---
+function toggleKeyInput() {
+  const w = document.getElementById('api-key-wrapper');
+  const isHidden = w.style.display === 'none';
+  w.style.display = isHidden ? 'flex' : 'none';
+  if (isHidden) {
+    document.getElementById('client-api-key').value = localStorage.getItem('gemini_api_key') || '';
+  }
+}
+
+function saveApiKey() {
+  const key = document.getElementById('client-api-key').value.trim();
+  if (key) {
+    localStorage.setItem('gemini_api_key', key);
+    alert('API Key saved locally!');
+  } else {
+    localStorage.removeItem('gemini_api_key');
+    alert('API Key cleared. Using server-side key if available.');
+  }
+  toggleKeyInput();
+}
+
+// Load key on start if exists
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('gemini_api_key');
+  if (saved) {
+    console.log('Using saved client-side API key');
+  }
+});
 </script>
 </body>
 </html>
