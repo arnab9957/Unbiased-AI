@@ -241,9 +241,23 @@ A person with a disability leading a startup is generally described as</textarea
     <!-- AI EXPLANATION -->
     <div class="card" style="margin-bottom:1.5rem; border:1px solid rgba(99,102,241,0.3); background:linear-gradient(145deg, var(--surface2), var(--card));">
         <div style="display:flex; align-items:center; gap:.75rem;">
-          <div id="api-key-wrapper" style="display:none; align-items:center; gap:.4rem; background:rgba(255,255,255,0.05); padding:.2rem .5rem; border-radius:8px; border:1px solid var(--border);">
-            <input type="password" id="client-api-key" placeholder="Gemini API Key" style="width:140px; padding:.3rem .5rem; font-size:.75rem; background:transparent; border:none; color:var(--text); outline:none;"/>
-            <button class="btn-cat" onclick="saveApiKey()" style="padding:.2rem .4rem; border:none; background:var(--accent); color:#fff;">Save</button>
+          <div id="api-key-wrapper" style="display:none; align-items:center; gap:.75rem; background:rgba(255,255,255,0.05); padding:.4rem .8rem; border-radius:10px; border:1px solid var(--border); flex-wrap:wrap;">
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <label style="font-size:0.65rem; margin:0; opacity:0.7;">API Key</label>
+              <input type="password" id="client-api-key" placeholder="Gemini API Key" style="width:160px; padding:.2rem 0; font-size:.8rem; background:transparent; border:none; color:var(--text); outline:none; border-bottom:1px solid var(--border);"/>
+            </div>
+            <div style="display:flex; flex-direction:column; gap:2px;">
+              <label style="font-size:0.65rem; margin:0; opacity:0.7;">Model</label>
+              <select id="llm-model" style="width:auto; padding:0.1rem 0.3rem; font-size:0.8rem; background:var(--surface2); border:1px solid var(--border); border-radius:4px;">
+                <option value="gemini-1.5-flash">Gemini 1.5 Flash</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+                <option value="gemini-flash-latest">Gemini Flash (Latest)</option>
+                <option value="gemini-3-flash-preview" selected>Gemini 3 Flash (Preview)</option>
+                <option value="gemini-pro-latest">Gemini Pro (Latest)</option>
+              </select>
+            </div>
+            <button class="btn-cat" onclick="saveSettings()" style="padding:.4rem .8rem; border:none; background:var(--accent); color:#fff; align-self:flex-end;">Save All</button>
           </div>
           <button class="btn-cat" id="btn-toggle-key" onclick="toggleKeyInput()" title="Set Custom API Key">🔑</button>
           <button class="btn-run" id="btn-explain" style="padding:0.4rem 1rem; font-size:0.85rem; width:auto; border-radius:8px;" onclick="explainResults()">
@@ -496,10 +510,11 @@ async function explainResults() {
 
   try {
     const clientKey = localStorage.getItem('gemini_api_key');
+    const model = document.getElementById('llm-model').value;
     const res = await fetch('/api/explain', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({...lastResults, client_api_key: clientKey})
+      body: JSON.stringify({...lastResults, client_api_key: clientKey, model: model})
     });
     
     const data = await res.json();
@@ -535,23 +550,29 @@ function toggleKeyInput() {
   }
 }
 
-function saveApiKey() {
+function saveSettings() {
   const key = document.getElementById('client-api-key').value.trim();
+  const model = document.getElementById('llm-model').value;
+  
   if (key) {
     localStorage.setItem('gemini_api_key', key);
-    alert('API Key saved locally!');
   } else {
     localStorage.removeItem('gemini_api_key');
-    alert('API Key cleared. Using server-side key if available.');
   }
+  
+  localStorage.setItem('gemini_model', model);
+  alert('Settings saved locally!');
   toggleKeyInput();
 }
 
-// Load key on start if exists
+// Load settings on start
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem('gemini_api_key');
-  if (saved) {
-    console.log('Using saved client-side API key');
+  const savedKey = localStorage.getItem('gemini_api_key');
+  const savedModel = localStorage.getItem('gemini_model');
+  
+  if (savedModel) {
+    const sel = document.getElementById('llm-model');
+    if (sel) sel.value = savedModel;
   }
 });
 </script>

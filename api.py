@@ -180,9 +180,14 @@ def explain():
         Format your response in beautiful Markdown with headers, bullet points, and bold text for emphasis. Do not include a greeting or sign-off, just the analysis.
         """
         
-        # Use REST API directly to be thread-safe with different API keys
+        # Dynamic model selection from client
+        target_model = body.get("model", "gemini-1.5-flash")
+        if not target_model.startswith("models/"):
+            target_model = f"models/{target_model}"
+
+        # Use v1beta for better compatibility with preview/latest models
         import requests
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/{target_model}:generateContent?key={api_key}"
         payload = {
             "contents": [{
                 "parts": [{"text": prompt_text}]
